@@ -19,16 +19,23 @@ class TWQuoteTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    func testURLParsing() {
+        let onlyHostURL = URL(string: "https://some.beautiful.cat")
+        let hostAndQueryURL = URL(string: "https://some.beautiful.cat?at=window")
+        
+        let queryParametes = [
+            "Some": "Valid",
+            "Another": "With non-URL safe %20 value",
+            "Other%20Key": "And value & as non-URL Safe?"
+        ]
+        
+        let hostResolvedURL = onlyHostURL?.appendingQueryParameters(queryParametes)
+        XCTAssertNotNil(hostResolvedURL)
+        XCTAssertEqual(hostResolvedURL!.absoluteString, "https://some.beautiful.cat?Another=With%20non-URL%20safe%20%2520%20value&Other%2520Key=And%20value%20%26%20as%20non-URL%20Safe?&Some=Valid")
+        
+        let hostAndQueryResolvedURL = hostAndQueryURL?.appendingQueryParameters(queryParametes)
+        XCTAssertNotNil(hostAndQueryResolvedURL)
+        XCTAssertEqual(hostAndQueryResolvedURL!.absoluteString, "https://some.beautiful.cat?at=window&Another=With%20non-URL%20safe%20%2520%20value&Other%2520Key=And%20value%20%26%20as%20non-URL%20Safe?&Some=Valid")
     }
 
 }

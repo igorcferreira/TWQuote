@@ -36,8 +36,24 @@ enum TWCurrency: String, CaseIterable {
     case GBP = "GBP"
 }
 
+protocol Environment {
+    var baseURL: URL { get }
+}
+
+enum TWServiceEnvironment: Environment {
+    case production
+    
+    var baseURL: URL {
+        return URL(string: "https://wise.com/gateway/v3/comparisons")!
+    }
+}
+
 struct TWService {
-    let urlPah = "https://wise.com/gateway/v3/comparisons"
+    let environment: Environment
+    
+    init(environment: Environment = TWServiceEnvironment.production) {
+        self.environment = environment
+    }
 
     func fetchQuote(sourceCurrency: TWCurrency, targetCurrency: TWCurrency, amount: Int, completion: @escaping (TWResponse?) -> ()) {
         let sessionConfig = URLSessionConfiguration.default
@@ -49,7 +65,7 @@ struct TWService {
             "sourceCurrency": sourceCurrency.rawValue,
             "targetCurrency": targetCurrency.rawValue,
         ]
-        guard let URL = URL(string: urlPah)?.appendingQueryParameters(URLParams) else {
+        guard let URL = environment.baseURL.appendingQueryParameters(URLParams) else {
             completion(nil)
             return
         }

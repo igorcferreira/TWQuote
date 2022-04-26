@@ -42,15 +42,12 @@ protocol Environment {
 
 enum TWServiceEnvironment: Environment {
     case production
-    
-    var baseURL: URL {
-        return URL(string: "https://wise.com/gateway/v3/comparisons")!
-    }
+    var baseURL: URL { Constants.urls.twServerURL }
 }
 
 enum ServiceError: Error {
     case invalidURL
-    case requestError
+    case requestError(code: URLError.Code)
 }
 
 struct TWService {
@@ -79,7 +76,7 @@ struct TWService {
         request.printCurl()
         let (data, response) = try await session.data(for: request)
         guard response.isSuccess else {
-            throw ServiceError.requestError
+            throw ServiceError.requestError(code: response.code)
         }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -93,6 +90,13 @@ extension URLResponse {
             return false
         }
         return 200..<300 ~= httpResponse.statusCode
+    }
+    var code: URLError.Code {
+        if let httpResponse = self as? HTTPURLResponse {
+            return URLError.Code(rawValue: httpResponse.statusCode)
+        } else {
+            return URLError.Code.badServerResponse
+        }
     }
 }
 

@@ -12,6 +12,9 @@ struct Constants {
     struct strings {
         static let userDefaultKey = "UserDefaultSettings"
     }
+    struct urls {
+        static let twServerURL = URL(string: "https://wise.com/gateway/v3/comparisons")!
+    }
 }
 
 struct UIConstants {

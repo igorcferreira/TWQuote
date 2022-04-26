@@ -101,7 +101,7 @@ extension URL {
     func appendingQueryParameters(_ parametersDictionary : Dictionary<String, String>) -> URL? {
         var components = URLComponents(url: self, resolvingAgainstBaseURL: false)
         let items = components?.queryItems ?? []
-        components?.queryItems = items + parametersDictionary.map { (key, value) in URLQueryItem(name: key, value: value) }
+        components?.queryItems = items + parametersDictionary.sorted(by: { $0.key < $1.key }).map { (key, value) in URLQueryItem(name: key, value: value) }
         return components?.url
     }
 }

@@ -58,13 +58,19 @@ class Menu: NSObject {
     @objc private func updateData() {
         displaySpinner(display: true)
         
-        viewModel.fetchQuote { (value) in
-            self.displaySpinner(display: false)
-            if let value = value {
-                self.item.button?.title = value
-            } else {
-                self.item.button?.title = UIConstants.strings.menuErrorLabel
-            }
+        Task {
+            let value = try? await viewModel.fetchQuote()
+            await update(value: value)
+        }
+    }
+    
+    @MainActor
+    private func update(value: String?) {
+        self.displaySpinner(display: false)
+        if let value = value {
+            self.item.button?.title = value
+        } else {
+            self.item.button?.title = UIConstants.strings.menuErrorLabel
         }
     }
     

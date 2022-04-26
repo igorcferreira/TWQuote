@@ -48,6 +48,11 @@ enum TWServiceEnvironment: Environment {
     }
 }
 
+enum ServiceError: Error {
+    case invalidURL
+    case requestError
+}
+
 struct TWService {
     let environment: Environment
     
@@ -55,7 +60,7 @@ struct TWService {
         self.environment = environment
     }
 
-    func fetchQuote(sourceCurrency: TWCurrency, targetCurrency: TWCurrency, amount: Int, completion: @escaping (TWResponse?) -> ()) {
+    func fetchQuote(sourceCurrency: TWCurrency, targetCurrency: TWCurrency, amount: Int) async throws -> TWResponse {
         let sessionConfig = URLSessionConfiguration.default
         
         let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
@@ -66,34 +71,51 @@ struct TWService {
             "targetCurrency": targetCurrency.rawValue,
         ]
         guard let URL = environment.baseURL.appendingQueryParameters(URLParams) else {
-            completion(nil)
-            return
+            throw ServiceError.invalidURL
         }
         var request = URLRequest(url: URL)
         request.httpMethod = "GET"
         
+        request.printCurl()
+        let (data, response) = try await session.data(for: request)
+        guard response.isSuccess else {
+            throw ServiceError.requestError
+        }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(TWResponse.self, from: data)
+    }
+}
 
-        let task = session.dataTask(with: request, completionHandler: { (data: Data?, response: URLResponse?, error: Error?) -> Void in
-            if (error == nil) {
-                if let data = data {
-                    do {
-                        let decoder = JSONDecoder()
-                        decoder.keyDecodingStrategy = .convertFromSnakeCase
-                        let twResponse = try decoder.decode(TWResponse.self, from: data)
-                        completion(twResponse)
-                    } catch {
-                        print("Error \(error)")
-                        completion(nil)
-                    }
-                }
-            }
-            else {
-                print("URL Session Task Failed: %@", error!.localizedDescription);
-                completion(nil)
-            }
-        })
-        task.resume()
-        session.finishTasksAndInvalidate()
+extension URLResponse {
+    var isSuccess: Bool {
+        guard let httpResponse = self as? HTTPURLResponse else {
+            return false
+        }
+        return 200..<300 ~= httpResponse.statusCode
+    }
+}
+
+extension URLRequest {
+    func printCurl() {
+        #if DEBUG
+        guard let url = self.url, let method = self.httpMethod else {
+            return
+        }
+        var components = ["curl -i"]
+        components.append("-X \(method)")
+
+        allHTTPHeaderFields?.forEach { (key, value) in
+            components.append("-H '\(key): \(value)'")
+        }
+
+        if let data = httpBody, let body = String(data: data, encoding: .utf8) {
+            components.append("-d '\(body)'")
+        }
+
+        components.append("\"\(url.absoluteString)\"")
+        print("\(components.joined(separator: " \\\n\t"))")
+        #endif
     }
 }
 

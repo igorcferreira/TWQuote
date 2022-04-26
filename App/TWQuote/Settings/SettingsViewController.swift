@@ -58,6 +58,6 @@ class SettingsViewController: NSViewController {
     }
 }
 
-protocol SettingsViewControllerDelegate: class {
+protocol SettingsViewControllerDelegate: AnyObject {
     func didSave(controller: SettingsViewController)
 }

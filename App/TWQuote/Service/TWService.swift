@@ -43,17 +43,16 @@ struct TWService {
         let sessionConfig = URLSessionConfiguration.default
         
         let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
-        guard var URL = URL(string: urlPah) else {
-            completion(nil)
-            return
-        }
         
         let URLParams = [
             "sendAmount": String(amount),
             "sourceCurrency": sourceCurrency.rawValue,
             "targetCurrency": targetCurrency.rawValue,
         ]
-        URL = URL.appendingQueryParameters(URLParams)
+        guard let URL = URL(string: urlPah)?.appendingQueryParameters(URLParams) else {
+            completion(nil)
+            return
+        }
         var request = URLRequest(url: URL)
         request.httpMethod = "GET"
         
@@ -82,26 +81,11 @@ struct TWService {
     }
 }
 
-protocol URLQueryParameterStringConvertible {
-    var queryParameters: String { get }
-}
-
-extension Dictionary : URLQueryParameterStringConvertible {
-    var queryParameters: String {
-        var parts: [String] = []
-        for (key, value) in self {
-            let part = String(format: "%@=%@",
-                              String(describing: key).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!,
-                              String(describing: value).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!)
-            parts.append(part as String)
-        }
-        return parts.joined(separator: "&")
-    }
-}
-
 extension URL {
-    func appendingQueryParameters(_ parametersDictionary : Dictionary<String, String>) -> URL {
-        let URLString : String = String(format: "%@?%@", self.absoluteString, parametersDictionary.queryParameters)
-        return URL(string: URLString)!
+    func appendingQueryParameters(_ parametersDictionary : Dictionary<String, String>) -> URL? {
+        var components = URLComponents(url: self, resolvingAgainstBaseURL: false)
+        let items = components?.queryItems ?? []
+        components?.queryItems = items + parametersDictionary.map { (key, value) in URLQueryItem(name: key, value: value) }
+        return components?.url
     }
 }
